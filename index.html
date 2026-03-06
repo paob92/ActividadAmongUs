@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Among Us — Sesión Game Jam Prep</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --card: #1f2b47;
+    --red: #ff4655;
+    --cyan: #00d4ff;
+    --green: #4dff91;
+    --yellow: #ffd84f;
+    --purple: #c77dff;
+    --text: #f0f4ff;
+    --muted: #6b7a9a;
+    --border: #2a3a5a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(199,125,255,0.07) 0%, transparent 40%),
+      radial-gradient(circle at 85% 70%, rgba(0,212,255,0.06) 0%, transparent 40%),
+      radial-gradient(1px 1px at 20% 40%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 55% 15%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 75% 55%, rgba(255,255,255,0.35) 0%, transparent 100%),
+      radial-gradient(1px 1px at 40% 75%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 30%, rgba(255,255,255,0.3) 0%, transparent 100%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .wrap { max-width: 860px; margin: 0 auto; padding: 28px 18px 70px; position: relative; z-index: 1; }
+
+  /* ── HEADER ── */
+  .header { text-align: center; margin-bottom: 32px; }
+
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,70,85,0.1); border: 1px solid rgba(255,70,85,0.3);
+    border-radius: 100px; padding: 5px 14px; margin-bottom: 16px;
+    font-size: 11px; font-weight: 700; letter-spacing: 2px; color: var(--red);
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(36px, 7vw, 60px);
+    line-height: 1; margin-bottom: 8px; letter-spacing: 1px;
+  }
+  h1 .sus { color: var(--red); }
+  h1 .crew { color: var(--cyan); }
+
+  .sub { font-size: 14px; color: var(--muted); max-width: 440px; margin: 0 auto 20px; line-height: 1.6; }
+
+  .dl-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--red); color: white;
+    font-weight: 700; font-size: 13px;
+    padding: 11px 22px; border-radius: 8px; text-decoration: none;
+    transition: all 0.2s; border: none; cursor: pointer;
+  }
+  .dl-btn:hover { background: #ff6070; transform: translateY(-1px); }
+
+  /* ── TIMER ── */
+  .timer-bar {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 20px; margin-bottom: 24px;
+  }
+  .t-label { font-size: 12px; color: var(--muted); flex: 1; }
+  .t-display {
+    font-family: 'Fredoka One', cursive; font-size: 32px;
+    color: var(--cyan); letter-spacing: 2px; min-width: 110px; text-align: right;
+  }
+  .t-display.warn { color: var(--red); animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: 0.5; } }
+  .t-btn {
+    font-size: 12px; font-weight: 700; letter-spacing: 1px;
+    padding: 8px 16px; border-radius: 6px; cursor: pointer;
+    border: 2px solid var(--cyan); background: rgba(0,212,255,0.08);
+    color: var(--cyan); transition: all 0.2s; white-space: nowrap;
+  }
+  .t-btn:hover { background: rgba(0,212,255,0.18); }
+
+  /* ── PHASE NAV ── */
+  .phase-nav {
+    display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 24px;
+  }
+  .pnav {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 6px; text-align: center;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .pnav:hover { border-color: rgba(255,255,255,0.15); }
+  .pnav.active { border-color: var(--cyan); background: rgba(0,212,255,0.06); }
+  .pnav .pt { font-family: 'Fredoka One', cursive; font-size: 15px; color: var(--yellow); display: block; margin-bottom: 2px; }
+  .pnav .pl { font-size: 11px; color: var(--muted); line-height: 1.3; }
+  .pnav.active .pl { color: var(--text); }
+
+  /* ── PHASES ── */
+  .phase { display: none; animation: up 0.3s ease; }
+  .phase.active { display: block; }
+  @keyframes up { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 22px; margin-bottom: 14px;
+  }
+  .card-title {
+    font-family: 'Fredoka One', cursive; font-size: 15px; color: var(--cyan);
+    margin-bottom: 14px; display: flex; align-items: center; gap: 8px; letter-spacing: 0.5px;
+  }
+
+  /* ── GAME INFO ── */
+  .game-row { display: flex; gap: 16px; align-items: center; }
+  .game-logo {
+    width: 68px; height: 68px; border-radius: 14px; flex-shrink: 0;
+    background: linear-gradient(135deg, #c0392b, #8e1010);
+    display: flex; align-items: center; justify-content: center; font-size: 34px;
+    border: 2px solid rgba(255,70,85,0.3);
+  }
+  .game-name { font-family: 'Fredoka One', cursive; font-size: 26px; color: var(--red); margin-bottom: 3px; }
+  .game-meta { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    font-size: 11px; font-weight: 600; padding: 3px 10px;
+    border-radius: 100px; border: 1px solid;
+  }
+  .chip.r { color: var(--red); border-color: rgba(255,70,85,0.3); background: rgba(255,70,85,0.07); }
+  .chip.c { color: var(--cyan); border-color: rgba(0,212,255,0.3); background: rgba(0,212,255,0.07); }
+  .chip.g { color: var(--green); border-color: rgba(77,255,145,0.3); background: rgba(77,255,145,0.07); }
+  .chip.y { color: var(--yellow); border-color: rgba(255,216,79,0.3); background: rgba(255,216,79,0.07); }
+  .chip.p { color: var(--purple); border-color: rgba(199,125,255,0.3); background: rgba(199,125,255,0.07); }
+
+  /* ── STEPS ── */
+  .steps { display: flex; flex-direction: column; gap: 9px; }
+  .step {
+    display: flex; gap: 12px; align-items: flex-start;
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px;
+  }
+  .step-ico { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .step p { font-size: 13px; line-height: 1.6; color: rgba(240,244,255,0.85); }
+  .step p strong { color: var(--text); }
+
+  /* ── ALERT ── */
+  .alert {
+    background: rgba(255,216,79,0.06); border: 1px solid rgba(255,216,79,0.25);
+    border-radius: 8px; padding: 12px 16px; font-size: 13px;
+    color: rgba(240,244,255,0.8); margin-bottom: 14px; line-height: 1.6;
+  }
+  .alert strong { color: var(--yellow); }
+
+  .info-box {
+    background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 8px; padding: 14px 16px; font-size: 13px;
+    color: rgba(240,244,255,0.8); margin-bottom: 14px; line-height: 1.6;
+  }
+  .info-box strong { color: var(--cyan); }
+
+  /* ── ROLES ── */
+  .roles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .role-card {
+    border-radius: 8px; padding: 14px;
+    border: 1px solid;
+  }
+  .role-card.crew { border-color: rgba(0,212,255,0.25); background: rgba(0,212,255,0.05); }
+  .role-card.imp { border-color: rgba(255,70,85,0.25); background: rgba(255,70,85,0.05); }
+  .role-title { font-family: 'Fredoka One', cursive; font-size: 16px; margin-bottom: 8px; }
+  .role-card.crew .role-title { color: var(--cyan); }
+  .role-card.imp .role-title { color: var(--red); }
+  .role-card p { font-size: 12px; color: rgba(240,244,255,0.75); line-height: 1.5; }
+
+  /* ── QUESTIONS ── */
+  .q-list { display: flex; flex-direction: column; gap: 10px; }
+  .q-item {
+    display: flex; gap: 12px; align-items: flex-start;
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 16px; transition: border-color 0.2s;
+  }
+  .q-item:hover { border-color: rgba(255,255,255,0.12); }
+  .q-n { font-family: 'Fredoka One', cursive; font-size: 16px; min-width: 28px; padding-top: 1px; }
+  .q-body { flex: 1; }
+  .q-text { font-size: 13px; line-height: 1.6; margin-bottom: 5px; }
+  .q-tag { font-size: 10px; font-weight: 700; letter-spacing: 1px; }
+
+  /* ── CANVAS ── */
+  .canvas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .c-cell {
+    background: rgba(199,125,255,0.04); border: 1px dashed rgba(199,125,255,0.2);
+    border-radius: 8px; padding: 14px;
+  }
+  .c-cell h4 { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--purple); text-transform: uppercase; margin-bottom: 6px; }
+  .c-cell p { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  /* ── PITCH ── */
+  .pitch-box {
+    background: rgba(77,255,145,0.05); border: 1px solid rgba(77,255,145,0.2);
+    border-radius: 8px; padding: 16px 18px; font-size: 14px; line-height: 1.7; margin-bottom: 12px;
+  }
+  .pitch-box .hl { color: var(--green); font-weight: 700; }
+  .example {
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 16px; font-size: 13px;
+    color: rgba(240,244,255,0.7); font-style: italic; margin-bottom: 10px;
+  }
+
+  /* ── VOTE ── */
+  .vote-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .v-card {
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px; cursor: pointer; text-align: center;
+    transition: all 0.2s;
+  }
+  .v-card:hover { border-color: rgba(77,255,145,0.4); background: rgba(77,255,145,0.04); }
+  .v-card.voted { border-color: var(--green); background: rgba(77,255,145,0.08); }
+  .v-card .vi { font-size: 24px; margin-bottom: 6px; }
+  .v-card .vl { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+  .vbar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .vbar-fill { height: 100%; background: var(--green); border-radius: 2px; transition: width 0.6s ease; }
+  .vpct { font-size: 11px; color: var(--green); font-weight: 700; margin-top: 4px; font-family: 'Fredoka One', cursive; }
+
+  /* ── REFLECT ── */
+  .reflect { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+  .r-cell {
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px; text-align: center;
+  }
+  .r-cell .ri { font-size: 26px; margin-bottom: 8px; }
+  .r-cell h4 { font-size: 12px; font-weight: 700; color: var(--yellow); margin-bottom: 6px; }
+  .r-cell p { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+  /* ── DIVIDER ── */
+  .div {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 10px; font-weight: 700; letter-spacing: 2px;
+    color: var(--muted); text-transform: uppercase; margin: 16px 0 12px;
+  }
+  .div::before, .div::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  /* ── NAV ── */
+  .nav { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+  .btn {
+    font-size: 12px; font-weight: 700; letter-spacing: 1px;
+    padding: 10px 18px; border-radius: 7px; cursor: pointer;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--text); transition: all 0.2s;
+  }
+  .btn:hover { background: var(--card); }
+  .btn.primary { background: var(--red); border-color: var(--red); color: white; }
+  .btn.primary:hover { background: #ff6070; }
+
+  .lobby-box {
+    background: rgba(255,70,85,0.05); border: 1px solid rgba(255,70,85,0.2);
+    border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;
+  }
+  .lobby-title { font-family: 'Fredoka One', cursive; font-size: 14px; color: var(--red); margin-bottom: 8px; }
+  .lobby-box p { font-size: 13px; color: rgba(240,244,255,0.8); line-height: 1.6; }
+  .lobby-box code {
+    background: rgba(255,255,255,0.08); border-radius: 4px;
+    padding: 1px 7px; font-family: monospace; color: var(--yellow);
+  }
+
+  @media(max-width:600px){
+    .phase-nav { grid-template-columns: repeat(2,1fr); }
+    .roles, .canvas, .vote-grid, .reflect { grid-template-columns: 1fr; }
+    .game-row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="eyebrow">🚀 Game Jam Prep · 30 min · Virtual</div>
+    <h1><span class="sus">AMONG</span> <span class="crew">US</span></h1>
+    <p class="sub">Juega en equipo desde cualquier lugar, analiza sus mecánicas y pitchea tu próxima idea de game jam.</p>
+    <a class="dl-btn" href="https://play.google.com/store/apps/details?id=com.innersloth.spacemafia" target="_blank">
+      ▶ Descargar gratis en Play Store
+    </a>
+  </div>
+
+  <!-- TIMER -->
+  <div class="timer-bar">
+    <div class="t-label">⏱ TEMPORIZADOR DE SESIÓN</div>
+    <div class="t-display" id="tDisplay">30:00</div>
+    <button class="t-btn" id="tBtn" onclick="toggleTimer()">▶ INICIAR</button>
+  </div>
+
+  <!-- PHASE NAV -->
+  <div class="phase-nav">
+    <div class="pnav active" onclick="go(0)"><span class="pt">5 min</span><span class="pl">🛸 El juego</span></div>
+    <div class="pnav" onclick="go(1)"><span class="pt">10 min</span><span class="pl">🎮 A jugar</span></div>
+    <div class="pnav" onclick="go(2)"><span class="pt">8 min</span><span class="pl">🔬 Análisis</span></div>
+    <div class="pnav" onclick="go(3)"><span class="pt">7 min</span><span class="pl">🚀 Pitch</span></div>
+  </div>
+
+  <!-- ══════ FASE 0 ══════ -->
+  <div class="phase active" id="ph0">
+
+    <div class="card">
+      <div class="card-title">🛸 EL JUEGO DE HOY</div>
+      <div class="game-row">
+        <div class="game-logo">🔴</div>
+        <div>
+          <div class="game-name">AMONG US</div>
+          <div class="game-meta">Android · iOS · PC · 4–15 jugadores · 100% gratis</div>
+          <div class="chips">
+            <span class="chip r">Deducción social</span>
+            <span class="chip c">Online multijugador</span>
+            <span class="chip g">Cooperativo + traición</span>
+            <span class="chip y">Cross-platform</span>
+            <span class="chip p">Comunicación verbal</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert">
+      <strong>⚡ Configuración virtual (antes de la clase):</strong> Cada estudiante descarga Among Us gratis en Play Store. El facilitador crea un lobby privado y comparte el <strong>código de sala</strong> por el chat de la videollamada. Asegúrense de tener el micrófono disponible — la comunicación en voz es parte de la mecánica.
+    </div>
+
+    <div class="card">
+      <div class="card-title">📖 ¿QUÉ ES AMONG US?</div>
+      <p style="font-size:14px;line-height:1.7;color:rgba(240,244,255,0.85);margin-bottom:12px;">
+        Son tripulantes de una nave espacial con una misión: completar tareas para mantener la nave operativa. El problema es que uno (o más) de ustedes es un <strong style="color:var(--red)">Impostor</strong> — alguien que sabotea la nave y elimina crewmates sin ser descubierto.
+      </p>
+      <p style="font-size:14px;line-height:1.7;color:rgba(240,244,255,0.85);">
+        Cuando se descubre un cadáver o alguien llama reunión de emergencia, <strong>todos debaten en voz alta</strong> para votar quién es el impostor y eyectarlo al espacio. La votación colectiva decide el destino de todos.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">👥 LOS DOS ROLES</div>
+      <div class="roles">
+        <div class="role-card crew">
+          <div class="role-title">👨‍🚀 CREWMATE</div>
+          <p>Completa tareas por el mapa, reporta cadáveres, observa comportamientos sospechosos y vota en las reuniones para encontrar al impostor.</p>
+        </div>
+        <div class="role-card imp">
+          <div class="role-title">🔪 IMPOSTOR</div>
+          <p>Sabotea sistemas, elimina crewmates cuando estés solo con ellos, usa los vents para moverte sin ser visto y miente convincentemente en las reuniones.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="lobby-box">
+      <div class="lobby-title">🔑 CÓMO CREAR EL LOBBY PRIVADO</div>
+      <p>En el menú principal → <code>Online</code> → <code>Create Game</code> → cambia a <strong>Private</strong> → comparte el código de 6 letras por el chat de la videoconferencia. Todos entran con <code>Enter Code</code>.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💡 POR QUÉ ES PERFECTO PARA GAME JAM</div>
+      <div class="steps">
+        <div class="step"><div class="step-ico">📡</div><p><strong>Información asimétrica:</strong> Cada jugador tiene información diferente — la mecánica más poderosa de Among Us y un patrón de diseño que puedes aplicar en tu jam.</p></div>
+        <div class="step"><div class="step-ico">🗣️</div><p><strong>Comunicación bajo presión:</strong> Las reuniones de 60 segundos simulan exactamente la comunicación en un equipo de game jam cuando todo explota.</p></div>
+        <div class="step"><div class="step-ico">⚙️</div><p><strong>Core loop descifrable:</strong> El loop completo del juego (tarea → sabotaje → reunión → voto) es simple pero produce decisiones infinitas. Una mecánica que puedes estudiar y replicar.</p></div>
+        <div class="step"><div class="step-ico">✂️</div><p><strong>Scope de jam:</strong> El concepto original (2018) fue hecho por 3 personas. Su MVP era radical y simple. Un modelo a seguir.</p></div>
+      </div>
+    </div>
+
+    <div class="nav">
+      <button class="btn primary" onclick="go(1)">¡A JUGAR! →</button>
+    </div>
+  </div>
+
+  <!-- ══════ FASE 1 ══════ -->
+  <div class="phase" id="ph1">
+
+    <div class="card">
+      <div class="card-title">🎮 ¡A JUGAR! — 10 MINUTOS</div>
+      <p style="font-size:14px;line-height:1.7;color:rgba(240,244,255,0.8);margin-bottom:14px;">
+        Jueguen <strong>2 rondas mínimo</strong>. No eres solo un jugador — eres un diseñador analizando cómo está construido cada momento del juego.
+      </p>
+    </div>
+
+    <div class="info-box">
+      <strong>💻 Contexto virtual:</strong> Mantengan la videollamada activa mientras juegan. La discusión en las reuniones de Among Us puede hacerse usando los micrófonos de la misma llamada — es más inmersivo y útil para el análisis posterior.
+    </div>
+
+    <div class="card">
+      <div class="card-title">🧠 MIENTRAS JUEGAS, OBSERVA ESTO</div>
+      <div class="steps">
+        <div class="step"><div class="step-ico">👀</div><p><strong>Onboarding:</strong> ¿Cuántos segundos tardaste en entender tu objetivo? ¿Necesitaste leer instrucciones o lo captaste jugando?</p></div>
+        <div class="step"><div class="step-ico">💬</div><p><strong>Comunicación:</strong> ¿Cómo cambia el tono de la conversación cuando hay un cadáver vs. cuando están trabajando en tareas? ¿Quién toma la iniciativa?</p></div>
+        <div class="step"><div class="step-ico">🎭</div><p><strong>Información asimétrica:</strong> Como impostor, ¿qué sientes al saber algo que los demás no saben? ¿Cómo influye eso en tu comportamiento?</p></div>
+        <div class="step"><div class="step-ico">😤</div><p><strong>Tensión vs. ritmo:</strong> ¿Cuándo el juego se siente aburrido? ¿Cuándo se siente demasiado caótico? ¿Qué mecánica (regla o sistema del juego) controla ese ritmo?</p></div>
+        <div class="step"><div class="step-ico">🎯</div><p><strong>El enganche (hook):</strong> ¿Cuál fue el momento exacto en que quisiste jugar otra ronda? ¿Fue una victoria, una derrota, o algo en el medio?</p></div>
+      </div>
+    </div>
+
+    <div class="nav">
+      <button class="btn" onclick="go(0)">← Atrás</button>
+      <button class="btn primary" onclick="go(2)">ANALIZAR →</button>
+    </div>
+  </div>
+
+  <!-- ══════ FASE 2 ══════ -->
+  <div class="phase" id="ph2">
+
+    <div class="card">
+      <div class="card-title">🔬 ANÁLISIS CRÍTICO — 8 MINUTOS</div>
+      <p style="font-size:14px;line-height:1.7;color:rgba(240,244,255,0.8);">Tómate 2 minutos para pensar en estas preguntas individualmente. Luego el facilitador guía la discusión grupal en la videollamada.</p>
+    </div>
+
+    <div class="q-list">
+
+      <div class="q-item">
+        <div class="q-n" style="color:var(--red)">Q1</div>
+        <div class="q-body">
+          <div class="q-text">¿Cuál es el core loop de Among Us en una sola oración? Usa el formato: <em>"El jugador hace X → sucede Y → lo que genera que quiera Z de nuevo."</em></div>
+          <div class="q-tag" style="color:var(--cyan)">● DISEÑO DE MECÁNICAS</div>
+        </div>
+      </div>
+
+      <div class="q-item">
+        <div class="q-n" style="color:var(--red)">Q2</div>
+        <div class="q-body">
+          <div class="q-text">El impostor tiene información que los crewmates no tienen, y viceversa. ¿Por qué esta asimetría hace el juego más interesante que si todos tuvieran la misma información?</div>
+          <div class="q-tag" style="color:var(--red)">● PENSAMIENTO CRÍTICO</div>
+        </div>
+      </div>
+
+      <div class="q-item">
+        <div class="q-n" style="color:var(--red)">Q3</div>
+        <div class="q-body">
+          <div class="q-text">Las reuniones duran 60 segundos. ¿Qué pasaría si duraran 5 minutos? ¿Y 10 segundos? ¿Qué nos dice eso sobre cómo el tiempo como mecánica afecta las decisiones?</div>
+          <div class="q-tag" style="color:var(--red)">● PENSAMIENTO CRÍTICO</div>
+        </div>
+      </div>
+
+      <div class="q-item">
+        <div class="q-n" style="color:var(--red)">Q4</div>
+        <div class="q-body">
+          <div class="q-text">Among Us no tiene tutorial. ¿Cómo aprende a jugar alguien que nunca lo ha visto? ¿Qué técnica de diseño usa para enseñar sin texto?</div>
+          <div class="q-tag" style="color:var(--cyan)">● DISEÑO DE MECÁNICAS</div>
+        </div>
+      </div>
+
+      <div class="q-item">
+        <div class="q-n" style="color:var(--red)">Q5</div>
+        <div class="q-body">
+          <div class="q-text">Si tu equipo tuviera 48 horas en una game jam para crear la versión mínima jugable de Among Us desde cero, ¿qué incluirías primero y qué cortarías?</div>
+          <div class="q-tag" style="color:var(--yellow)">● GAME JAM SCOPE</div>
+        </div>
+      </div>
+
+      <div class="q-item">
+        <div class="q-n" style="color:var(--red)">Q6</div>
+        <div class="q-body">
+          <div class="q-text">Among Us depende de que los jugadores <em>confíen y desconfíen</em> entre sí. ¿Cómo hace el juego para que esa tensión se sienta divertida y no frustrante?</div>
+          <div class="q-tag" style="color:var(--red)">● PENSAMIENTO CRÍTICO</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="div">MINI CANVAS</div>
+
+    <div class="card" style="margin-bottom:10px;">
+      <div class="card-title">📋 ¿QUÉ ES UN CANVAS DE DISEÑO?</div>
+      <p style="font-size:13px;line-height:1.7;color:rgba(240,244,255,0.8);">
+        Un <strong style="color:var(--cyan)">canvas</strong> es una herramienta visual que te permite analizar o diseñar un juego en una sola página, respondiendo las preguntas más importantes de forma rápida y ordenada. En lugar de escribir un documento largo, el canvas te obliga a ser concreto y directo — exactamente lo que necesitas en una game jam. Úsalo como una "radiografía" del juego que acabas de jugar.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 CANVAS DE AMONG US — COMPLÉTALO EN PAPEL O EN EL CHAT</div>
+      <div class="canvas">
+        <div class="c-cell">
+          <h4>🎯 Objetivo del jugador</h4>
+          <p>¿Qué quiere lograr cada rol? Crewmate: completar tareas. Impostor: eliminar sin ser descubierto.</p>
+        </div>
+        <div class="c-cell">
+          <h4>⚙️ Mecánica central</h4>
+          <p>La acción que define TODA la experiencia en 1 frase. Ejemplo: "votar para expulsar a alguien basándote en sospechas, no en certezas."</p>
+        </div>
+        <div class="c-cell">
+          <h4>💡 Momento "enganche" (hook)</h4>
+          <p><strong style="color:var(--purple)">¿Qué es el hook?</strong> Es el instante preciso en que el jugador piensa "quiero jugar otra ronda". En Among Us suele ser la primera reunión donde alguien miente de manera convincente. ¿Cuál fue el tuyo?</p>
+        </div>
+        <div class="c-cell">
+          <h4>✂️ Qué cortarías</h4>
+          <p>Una característica que eliminarías sin romper el juego. Ejemplo: el chat por texto — si todos usan micrófono, el chat sobra.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav">
+      <button class="btn" onclick="go(1)">← Atrás</button>
+      <button class="btn primary" onclick="go(3)">GAME PITCH →</button>
+    </div>
+  </div>
+
+  <!-- ══════ FASE 3 ══════ -->
+  <div class="phase" id="ph3">
+
+    <div class="card">
+      <div class="card-title">🚀 GAME PITCH — 7 MINUTOS</div>
+      <p style="font-size:14px;line-height:1.7;color:rgba(240,244,255,0.8);">Toma una mecánica de Among Us y aplícala a un contexto completamente diferente. Esto es exactamente lo que hace un buen game designer en una jam.</p>
+    </div>
+
+    <div class="card" style="margin-bottom:10px;">
+      <div class="card-title">💡 ¿QUÉ ES UN PITCH Y QUÉ ES EL HOOK?</div>
+      <p style="font-size:13px;line-height:1.7;color:rgba(240,244,255,0.8);margin-bottom:10px;">
+        Un <strong style="color:var(--green)">pitch</strong> es la presentación de tu idea de juego en una sola oración clara. En una game jam tienes pocos segundos para convencer a tu equipo de que tu idea vale la pena — el pitch es esa oración.
+      </p>
+      <p style="font-size:13px;line-height:1.7;color:rgba(240,244,255,0.8);">
+        El <strong style="color:var(--purple)">hook</strong> (o "enganche") es la parte de tu idea que hace que alguien piense <em>"eso suena interesante, cuéntame más"</em>. No es el género ni la historia — es la mecánica o situación sorprendente que diferencia tu juego de todos los demás. Un buen pitch siempre tiene un hook claro.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚡ FÓRMULA: EL PITCH EN UNA ORACIÓN</div>
+      <div class="pitch-box">
+        "Es como <span class="hl">Among Us</span> pero <span class="hl">[diferenciador único]</span>, para <span class="hl">[tipo de jugador o plataforma]</span>."
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px;margin-top:-4px;">👇 Ejemplos inspirados en videojuegos reales:</p>
+      <div class="example">🎮 <strong style="color:var(--cyan)">Inspirado en Minecraft:</strong> "Es como Among Us pero el mapa lo construyen los propios jugadores antes de empezar la partida, así nunca hay dos juegos iguales." — <em>Hook: mapa generado por los jugadores.</em></div>
+      <div class="example">🎮 <strong style="color:var(--cyan)">Inspirado en Pokémon:</strong> "Es como Among Us pero cada tripulante tiene habilidades únicas basadas en criaturas que capturaron antes de subir a la nave." — <em>Hook: colección de habilidades antes del partido.</em></div>
+      <div class="example">🎮 <strong style="color:var(--cyan)">Inspirado en Phasmophobia:</strong> "Es como Among Us pero el impostor no es un jugador — es una IA que aprende a mentir mejor cuanto más rounds lleva la partida." — <em>Hook: el villano aprende y se adapta.</em></div>
+      <div class="example">🎮 <strong style="color:var(--cyan)">Inspirado en Fall Guys:</strong> "Es como Among Us pero la fase de 'tareas' es una carrera de obstáculos y solo los que lleguen primero pueden votar en la reunión." — <em>Hook: el rendimiento en minijuegos decide quién tiene voz.</em></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🗣️ DINÁMICA EN VIDEOLLAMADA</div>
+      <div class="steps">
+        <div class="step"><div class="step-ico">✏️</div><p><strong>Silencio creativo (1 min):</strong> Todos apagan micros. Cada persona escribe su pitch en papel o en el chat privado. Sin leer lo de otros todavía.</p></div>
+        <div class="step"><div class="step-ico">🎤</div><p><strong>Ronda de pitches (2 min):</strong> Cada persona enciende el micro y lee su pitch. Máximo 20 segundos. Sin interrupciones, sin comentarios aún.</p></div>
+        <div class="step"><div class="step-ico">🗳️</div><p><strong>Votación (1 min):</strong> Todos votan con el pulgar arriba 👍 en la videollamada cuál pitch tiene el enganche (hook) más fuerte.</p></div>
+        <div class="step"><div class="step-ico">💬</div><p><strong>Debate (3 min):</strong> ¿Por qué ganó ese pitch? ¿Qué mecánica de Among Us tomó prestada? ¿Cómo lo llevarían a una jam de 48 horas?</p></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🗳️ VOTA: ¿QUÉ MECÁNICA DE AMONG US TE LLEVARÍAS A TU JAM?</div>
+      <div class="vote-grid">
+        <div class="v-card" id="v0" onclick="vote(0)">
+          <div class="vi">📡</div>
+          <div class="vl">Información asimétrica</div>
+          <div class="vbar"><div class="vbar-fill" id="vf0" style="width:0%"></div></div>
+          <div class="vpct" id="vp0">0%</div>
+        </div>
+        <div class="v-card" id="v1" onclick="vote(1)">
+          <div class="vi">⏳</div>
+          <div class="vl">Reuniones con tiempo límite</div>
+          <div class="vbar"><div class="vbar-fill" id="vf1" style="width:0%"></div></div>
+          <div class="vpct" id="vp1">0%</div>
+        </div>
+        <div class="v-card" id="v2" onclick="vote(2)">
+          <div class="vi">🗣️</div>
+          <div class="vl">Debate y voto colectivo</div>
+          <div class="vbar"><div class="vbar-fill" id="vf2" style="width:0%"></div></div>
+          <div class="vpct" id="vp2">0%</div>
+        </div>
+        <div class="v-card" id="v3" onclick="vote(3)">
+          <div class="vi">🎭</div>
+          <div class="vl">Roles ocultos desde el inicio</div>
+          <div class="vbar"><div class="vbar-fill" id="vf3" style="width:0%"></div></div>
+          <div class="vpct" id="vp3">0%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="div">REFLEXIÓN FINAL</div>
+
+    <div class="card">
+      <div class="card-title">🌟 LO QUE AMONG US LE ENSEÑA A UN GAME DESIGNER</div>
+      <div class="reflect">
+        <div class="r-cell">
+          <div class="ri">🎭</div>
+          <h4>ROLES = PERSPECTIVAS</h4>
+          <p>El mismo juego se experimenta diferente según tu rol. Diseñar para múltiples perspectivas multiplica la profundidad sin añadir complejidad.</p>
+        </div>
+        <div class="r-cell">
+          <div class="ri">💬</div>
+          <h4>EL DISEÑO NO TERMINA EN EL CÓDIGO</h4>
+          <p>Among Us diseñó el momento de discusión verbal. Los mejores momentos del juego ocurren fuera de la pantalla.</p>
+        </div>
+        <div class="r-cell">
+          <div class="ri">✂️</div>
+          <h4>MENOS ES MÁS (SCOPE)</h4>
+          <p>El MVP de 2018 tenía un mapa y 2 roles. La riqueza emergió de la interacción social, no de las features. Perfecto modelo para una jam.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav">
+      <button class="btn" onclick="go(2)">← Atrás</button>
+      <button class="btn primary" onclick="reset()">🔁 Nueva sesión</button>
+    </div>
+  </div>
+
+</div>
+<script>
+// Timer
+let s=1800, run=false, iv=null;
+function toggleTimer(){
+  if(run){clearInterval(iv);run=false;document.getElementById('tBtn').textContent='▶ REANUDAR';}
+  else{
+    run=true;document.getElementById('tBtn').textContent='⏸ PAUSAR';
+    iv=setInterval(()=>{
+      s--;
+      const d=document.getElementById('tDisplay');
+      d.textContent=`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+      d.classList.toggle('warn',s<=300);
+      if(s<=0){clearInterval(iv);run=false;document.getElementById('tBtn').textContent='⏹ FIN';}
+    },1000);
+  }
+}
+
+// Phases
+function go(n){
+  document.querySelectorAll('.phase').forEach((p,i)=>p.classList.toggle('active',i===n));
+  document.querySelectorAll('.pnav').forEach((p,i)=>p.classList.toggle('active',i===n));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// Vote
+let voted=false;
+const base=[5,3,4,4];
+function vote(i){
+  if(voted)return; voted=true;
+  base[i]++;
+  const tot=base.reduce((a,b)=>a+b,0);
+  document.getElementById('v'+i).classList.add('voted');
+  base.forEach((v,j)=>{
+    const p=Math.round(v/tot*100);
+    document.getElementById('vf'+j).style.width=p+'%';
+    document.getElementById('vp'+j).textContent=p+'%';
+  });
+}
+
+// Reset
+function reset(){
+  voted=false; clearInterval(iv); run=false; s=1800;
+  document.getElementById('tDisplay').textContent='30:00';
+  document.getElementById('tDisplay').classList.remove('warn');
+  document.getElementById('tBtn').textContent='▶ INICIAR';
+  [0,1,2,3].forEach(j=>{
+    document.getElementById('v'+j).classList.remove('voted');
+    document.getElementById('vf'+j).style.width='0%';
+    document.getElementById('vp'+j).textContent='0%';
+  });
+  go(0);
+}
+</script>
+</body>
+</html>
